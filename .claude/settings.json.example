@@ -1,0 +1,6 @@
+{
+  "env": {
+    "VIRTUAL_ENV": "/path/to/your/sandbox_package_install/.venv",
+    "HPC_BUNDLER_PROJECT_DIR": "/path/to/your/sandbox_package_install"
+  }
+}

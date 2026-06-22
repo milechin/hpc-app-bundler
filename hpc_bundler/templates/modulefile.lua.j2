@@ -1,0 +1,20 @@
+-- {{ target }}/{{ version }}.lua
+
+local version = myModuleVersion()
+local pkgName  = myModuleName()
+local prefix   = pathJoin("__INSTALL_PREFIX__", pkgName, version)
+
+whatis("Name: "    .. pkgName)
+whatis("Version: " .. version)
+whatis("URL: https://github.com/spack/spack-packages/tree/develop/repos/spack_repo/builtin/packages/" .. pkgName)
+
+{% for dep in runtime_deps %}
+load("{{ dep.name }}/{{ dep.version }}")
+{% endfor %}
+prepend_path("PATH",            pathJoin(prefix, "bin"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(prefix, "lib"))
+prepend_path("LD_LIBRARY_PATH", pathJoin(prefix, "lib64"))
+prepend_path("PKG_CONFIG_PATH", pathJoin(prefix, "lib", "pkgconfig"))
+prepend_path("PKG_CONFIG_PATH", pathJoin(prefix, "lib64", "pkgconfig"))
+prepend_path("MANPATH",         pathJoin(prefix, "share", "man"))
+prepend_path("INCLUDE",         pathJoin(prefix, "include"))

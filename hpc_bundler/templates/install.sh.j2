@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+INSTALL_PREFIX=${INSTALL_PREFIX:-$HOME/pkg}
+MODULEFILE_DIR=${MODULEFILE_DIR:-$HOME/modulefiles}
+BUNDLE_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+echo "==================================================================="
+echo "  Installing {{ dep_tree.target }} {{ dep_tree.version }}"
+echo "  Install prefix: $INSTALL_PREFIX"
+echo "  Modulefiles:    $MODULEFILE_DIR"
+echo "==================================================================="
+echo ""
+
+# Use GCC toolset 14 if available (AlmaLinux / RHEL); fall back to system gcc
+if [ -d /opt/rh/gcc-toolset-14/root/usr/bin ]; then
+    export PATH=/opt/rh/gcc-toolset-14/root/usr/bin:$PATH
+    export CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc
+    export CXX=/opt/rh/gcc-toolset-14/root/usr/bin/g++
+    export FC=/opt/rh/gcc-toolset-14/root/usr/bin/gfortran
+else
+    export CC=${CC:-gcc}
+    export CXX=${CXX:-g++}
+    export FC=${FC:-gfortran}
+fi
+
+{% for step in build_log.steps %}
+echo "------------------------------------------------------------------"
+echo "  Building {{ step.package_name }} {{ step.package_version }}"
+echo "------------------------------------------------------------------"
+
+{% set dep = namespace(found=none) %}
+{% for d in dep_tree.dependencies %}
+{% if d.name == step.package_name %}{% set dep.found = d %}{% endif %}
+{% endfor %}
+
+{% if dep.found %}
+echo "{{ dep.found.sha256 }}  $BUNDLE_DIR/{{ dep.found.file }}" | sha256sum -c
+{% endif %}
+
+{% for cmd_entry in step.commands %}
+{% set cmd = cmd_entry.cmd
+    | replace(bundle_dir_container + '/', '$BUNDLE_DIR/')
+    | replace(bundle_dir_container, '$BUNDLE_DIR')
+    | replace(install_prefix_container + '/' + step.package_name + '/' + step.package_version,
+              '$INSTALL_PREFIX/' + step.package_name + '/' + step.package_version)
+    | replace(install_prefix_container, '$INSTALL_PREFIX') %}
+{{ cmd }}
+{% endfor %}
+
+echo "  ✓ {{ step.package_name }} {{ step.package_version }} done"
+echo ""
+{% endfor %}
+
+# Install modulefile — substitute the actual install prefix at install time
+mkdir -p "$MODULEFILE_DIR/{{ dep_tree.target }}"
+sed "s|__INSTALL_PREFIX__|$INSTALL_PREFIX|g" \
+    "$BUNDLE_DIR/modulefiles/{{ dep_tree.target }}/{{ dep_tree.version }}.lua" \
+    > "$MODULEFILE_DIR/{{ dep_tree.target }}/{{ dep_tree.version }}.lua"
+
+echo "==================================================================="
+echo "  Installation complete!"
+echo ""
+echo "  To use {{ dep_tree.target }} {{ dep_tree.version }}:"
+echo "    module use \$MODULEFILE_DIR"
+echo "    module load {{ dep_tree.target }}/{{ dep_tree.version }}"
+echo "==================================================================="
