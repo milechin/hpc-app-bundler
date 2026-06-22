@@ -58,16 +58,13 @@ the container session.
 
 ---
 
-## Usage modes
-
-### Mode 1 — Container-native (recommended)
+## Usage
 
 Claude Code runs *inside* the Docker sandbox. Your host filesystem is completely
-isolated — Claude only has access to the bundle output directory and your Claude
-credentials (read-only).
+isolated — Claude only has access to the bundle output directory.
 
-**No local Python setup required.** The helper package is baked into the Docker
-image at build time (Python 3.11 + pip baked into the Dockerfile).
+**No local Python setup required.** The helper package is pre-installed inside
+the Docker image.
 
 ```bash
 ./launch-sandbox.sh [output-dir]
@@ -79,38 +76,6 @@ Inside the session:
 /hpc-bundle <software> <version>
 /hpc-bundle <software> <version> --output-dir /bundle/custom-dir
 ```
-
-### Mode 2 — Host-based
-
-Claude Code runs on your host and manages Docker on your behalf. Use this if you
-prefer to keep Claude Code running in your normal environment.
-
-Because Claude runs on the host here, the helper package must also be installed
-locally so the host-side workflow can call it.
-
-**One-time setup:**
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e .
-```
-
-Copy the example settings file and fill in your paths:
-```bash
-cp .claude/settings.json.example .claude/settings.json
-# then edit .claude/settings.json with your actual paths
-```
-
-```json
-{
-  "env": {
-    "VIRTUAL_ENV": "/path/to/your/sandbox_package_install/.venv",
-    "HPC_BUNDLER_PROJECT_DIR": "/path/to/your/sandbox_package_install"
-  }
-}
-```
-
-Open a Claude Code session in this directory, then use `/hpc-bundle` as normal.
-The skill auto-detects which mode you are in and routes to the correct workflow.
 
 ---
 
@@ -184,11 +149,8 @@ INSTALL_PREFIX=/project/tools MODULEFILE_DIR=/project/modulefiles bash install.s
 
 ### Moving to a different workstation
 
-**Container-native mode:** copy the repo, run `./launch-sandbox.sh`. The image
-will be rebuilt automatically on first use. No other configuration needed.
-
-**Host-based mode:** copy the repo, create a new venv, update the `VIRTUAL_ENV`
-path in `.claude/settings.json`, rebuild the Docker image.
+Copy the repo and run `./launch-sandbox.sh`. The image will be rebuilt
+automatically on first use. No other configuration needed.
 
 ---
 
@@ -224,11 +186,6 @@ mechanism is working by running a test curl inside `unshare --net`. The containe
 itself retains internet access throughout — the Claude agent needs it to reach
 Anthropic. For a fully offline install test, extract the bundle on a machine with
 no internet and run `install.sh` manually.
-
-### Host-based mode
-
-Claude runs on your host with normal permission prompts for each file or bash
-operation. Build work still executes inside the container via `docker exec`.
 
 ---
 
@@ -299,10 +256,9 @@ launch-sandbox.sh                        # Start an isolated container-native se
 
 .claude/
 ├── commands/hpc-bundle.md             # /hpc-bundle skill (auto-detects mode)
-├── workflows/
-│   ├── hpc-bundler-local.js          # Container-native workflow (no docker calls)
-│   └── hpc-bundler.js                # Host-based workflow (manages docker itself)
-└── settings.json                        # VIRTUAL_ENV path for host-based mode
+│   └── workflows/
+│       └── hpc-bundler.js                # Build workflow (runs inside container)
+└── settings.json
 
 hpc_bundler/
 ├── docker_manager.py                    # Container lifecycle + network toggle

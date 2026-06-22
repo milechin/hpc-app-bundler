@@ -20,7 +20,7 @@
 set -euo pipefail
 
 BUNDLE_DIR="${1:-./bundles}"
-IMAGE="hpc-bundler-sandbox:v2"
+IMAGE="hpc-bundler-sandbox:v3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Resolve to absolute path so the volume mount works from any cwd
@@ -45,5 +45,8 @@ docker run --rm -it \
     --memory="12g" \
     --cpus="$(nproc)" \
     --volume "${BUNDLE_DIR}:/bundle" \
+    --volume "${SCRIPT_DIR}/.claude/workflows:/workspace/.claude/workflows:ro" \
+    --volume "${SCRIPT_DIR}/.claude/commands:/workspace/.claude/commands:ro" \
+    --volume "${SCRIPT_DIR}/hpc_bundler:/workspace/hpc_bundler:ro" \
     "$IMAGE" \
     -c "claude --dangerously-skip-permissions"

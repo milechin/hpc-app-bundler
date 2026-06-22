@@ -30,7 +30,7 @@ Run the `hpc-bundler-local` workflow. Pass the args object using the actual
 values you parsed in Step 1 — do NOT pass placeholder strings:
 
 ```
-name: hpc-bundler-local
+name: hpc-bundler
 args:
   software:      <the actual softwareName you parsed>
   version:       <the actual softwareVersion you parsed>
@@ -51,22 +51,18 @@ the directory you passed to `launch-sandbox.sh` on your host.
 
 ### If ON_HOST
 
-Run: `echo "${HPC_BUNDLER_PROJECT_DIR:-unset}"` to get the project directory.
-If it prints "unset", copy `.claude/settings.json.example` to `.claude/settings.json`
-and fill in your paths before continuing.
+Tell the user:
 
-Run the `hpc-bundler` workflow with the actual parsed values:
+> You are running on the host, not inside the sandbox container. The `/hpc-bundle`
+> command must be run from inside the container session.
+>
+> Exit this session and launch the sandbox first:
+> ```bash
+> ./launch-sandbox.sh ./bundles
+> ```
+> Then run `/hpc-bundle` inside the new session.
 
-```
-name: hpc-bundler
-args:
-  software:      <the actual softwareName you parsed>
-  version:       <the actual softwareVersion you parsed>
-  outputDir:     <the actual outputDir, default ./bundles>
-  installPrefix: $HOME/pkg
-  maxRetries:    3
-  projectDir:    <value of $HPC_BUNDLER_PROJECT_DIR env var>
-```
+Do not attempt to run the workflow from the host.
 
 ---
 
